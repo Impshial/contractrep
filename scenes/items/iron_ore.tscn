@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=4]
+
+[ext_resource type="Script" path="res://scripts/items/FactoryItem.gd" id="1_item"]
+
+[node name="IronOre" type="Node2D"]
+script = ExtResource("1_item")

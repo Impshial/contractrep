@@ -1,0 +1,120 @@
+[gd_scene load_steps=18 format=4]
+
+[ext_resource type="Script" path="res://scripts/MainGame.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/Board.gd" id="2_board"]
+[ext_resource type="Script" path="res://scripts/GridRenderer.gd" id="3_grid_renderer"]
+[ext_resource type="Script" path="res://scripts/PlacementController.gd" id="4_placement"]
+[ext_resource type="PackedScene" path="res://scenes/ui/toolbar.tscn" id="5_toolbar"]
+[ext_resource type="Script" path="res://scripts/FactorySimulation.gd" id="6_simulation"]
+[ext_resource type="PackedScene" path="res://scenes/items/iron_ore.tscn" id="7_iron_ore"]
+[ext_resource type="Script" path="res://scripts/SaveManager.gd" id="8_save_manager"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/conveyor.tscn" id="9_conveyor"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/miner.tscn" id="10_miner"]
+[ext_resource type="Script" path="res://scripts/CameraController.gd" id="11_camera"]
+[ext_resource type="Script" path="res://scripts/ui/SaveLoadDialogs.gd" id="12_save_dialogs"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/furnace.tscn" id="13_furnace"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/exchanger.tscn" id="14_exchanger"]
+[ext_resource type="Script" path="res://scripts/ui/FurnaceInventoryDialog.gd" id="15_furnace_dialog"]
+[ext_resource type="Script" path="res://scripts/robots/RobotController.gd" id="16_robot_controller"]
+[ext_resource type="Script" path="res://scripts/robots/RobotNavigation.gd" id="17_robot_navigation"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_main")
+
+[node name="Board" type="Node2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(32, 24)
+script = ExtResource("2_board")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("11_camera")
+board_path = NodePath("../Board")
+
+[node name="GridRenderer" type="Node2D" parent="Board"]
+script = ExtResource("3_grid_renderer")
+board_path = NodePath("..")
+
+[node name="Buildings" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Items" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="Robots" type="Node2D" parent="."]
+unique_name_in_owner = true
+
+[node name="RobotNavigation" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("17_robot_navigation")
+board_path = NodePath("../Board")
+
+[node name="RobotController" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("16_robot_controller")
+board_path = NodePath("../Board")
+robot_parent_path = NodePath("../Robots")
+navigation_path = NodePath("../RobotNavigation")
+
+[node name="FactorySimulation" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("6_simulation")
+board_path = NodePath("../Board")
+item_parent_path = NodePath("../Items")
+item_scene = ExtResource("7_iron_ore")
+
+[node name="SaveManager" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("8_save_manager")
+board_path = NodePath("../Board")
+building_parent_path = NodePath("../Buildings")
+factory_simulation_path = NodePath("../FactorySimulation")
+robot_controller_path = NodePath("../RobotController")
+conveyor_scene = ExtResource("9_conveyor")
+miner_scene = ExtResource("10_miner")
+furnace_scene = ExtResource("13_furnace")
+exchanger_scene = ExtResource("14_exchanger")
+item_scene = ExtResource("7_iron_ore")
+
+[node name="PlacementController" type="Node2D" parent="."]
+unique_name_in_owner = true
+script = ExtResource("4_placement")
+board_path = NodePath("../Board")
+building_parent_path = NodePath("../Buildings")
+factory_simulation_path = NodePath("../FactorySimulation")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Toolbar" parent="UI" instance=ExtResource("5_toolbar")]
+
+[node name="SaveLoadDialogs" type="Control" parent="UI"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("12_save_dialogs")
+save_manager_path = NodePath("../../SaveManager")
+
+[node name="FurnaceInventoryDialog" type="Control" parent="UI"]
+unique_name_in_owner = true
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("15_furnace_dialog")
+
+[node name="DetailsPanel" type="PanelContainer" parent="UI"]
+visible = false
+anchors_preset = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 210.0
+offset_bottom = 180.0
+
+[node name="MarginContainer" type="MarginContainer" parent="UI/DetailsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="DetailsLabel" type="Label" parent="UI/DetailsPanel/MarginContainer"]
+layout_mode = 2
+text = "Details\nConveyors: 0\nMiners: 0\nFurnaces: 0\nExchangers: 0\nIron Ore: 0\nCoal: 0\nIron Plates: 0"
