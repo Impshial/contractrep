@@ -38,8 +38,13 @@ func spawn_starting_robots(seed_value: int = 0) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value if seed_value != 0 else int(Time.get_unix_time_from_system() * 1000.0)
 	var start_center := _board.grid_to_world(Vector2i(50, 50))
+	var robot_index := 0
 	for offset: Vector2 in STARTING_OFFSETS:
-		_spawn_robot(rng.randi_range(0, Robot.SPRITE_PATHS.size() - 1), start_center + offset)
+		var robot := _spawn_robot(rng.randi_range(0, Robot.SPRITE_PATHS.size() - 1), start_center + offset)
+		if robot_index == 0:
+			robot.inventory.add_item("wood", 18)
+			robot.inventory.add_item("iron_ore", 7)
+		robot_index += 1
 
 
 func clear_robots() -> void:
@@ -91,6 +96,32 @@ func handle_move_command(world_position: Vector2) -> bool:
 
 		reserved_cells[target_cell] = true
 		robot.set_path(path)
+
+	return true
+
+
+func handle_deposit_command(chest: Chest) -> bool:
+	if chest == null or _selected_robots.is_empty():
+		return false
+
+	var reserved_cells: Dictionary = {}
+	for robot: Robot in _selected_robots:
+		if robot == null:
+			continue
+
+		var start_cell := _board.world_to_grid(robot.global_position)
+		var target_cell := _navigation.find_reachable_destination(start_cell, chest.grid_position, reserved_cells)
+		if target_cell == RobotNavigation.INVALID_CELL:
+			print("No valid path found for robot deposit command.")
+			continue
+
+		var path := _navigation.get_world_path(start_cell, target_cell)
+		if path.is_empty():
+			print("No valid path found for robot deposit command.")
+			continue
+
+		reserved_cells[target_cell] = true
+		robot.start_deposit_to_chest(chest, path)
 
 	return true
 

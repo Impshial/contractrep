@@ -2,12 +2,13 @@ class_name Conveyor
 extends Building
 
 const STRAIGHT_ANIMATION: StringName = &"straight"
-const STRAIGHT_FRAME_COUNT: int = 8
+const STRAIGHT_FRAME_COUNT: int = 16
 const STRAIGHT_FRAME_SIZE: Vector2i = Vector2i(48, 48)
-const STRAIGHT_SHEET: Texture2D = preload("res://assets/conveyors/belt_straight_black_yellow_smooth.png")
+const STRAIGHT_SHEET: Texture2D = preload("res://assets/conveyors/conveyor_green_idle_48.png")
 const BELT_SECONDS_PER_TILE: float = 0.5
-const FRAME_ADVANCE_PIXELS: float = 6.0
+const FRAME_ADVANCE_PIXELS: float = 3.0
 const MAX_STACKED_ITEMS: int = 4
+const SOURCE_DIRECTION: Vector2 = Vector2.LEFT
 
 var current_item: FactoryItem
 var stacked_items: Array[FactoryItem] = []
@@ -90,6 +91,10 @@ func _ready() -> void:
 	_update_animated_sprite()
 
 
+
+func _process(_delta: float) -> void:
+	_update_animation_frame()
+
 func configure(new_grid_position: Vector2i, new_direction: int, new_cell_size: int) -> void:
 	super.configure(new_grid_position, new_direction, new_cell_size)
 	_update_animated_sprite()
@@ -162,10 +167,12 @@ func _create_animated_sprite() -> void:
 		return
 
 	_animated_sprite = AnimatedSprite2D.new()
+	_animated_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	_animated_sprite.sprite_frames = _create_sprite_frames()
 	_animated_sprite.animation = STRAIGHT_ANIMATION
 	_animated_sprite.speed_scale = 1.0
-	_animated_sprite.play()
+	_animated_sprite.stop()
+	_update_animation_frame()
 	add_child(_animated_sprite)
 
 	_preview_overlay = ColorRect.new()
@@ -201,13 +208,22 @@ func _belt_animation_fps() -> float:
 	return belt_pixels_per_second / FRAME_ADVANCE_PIXELS
 
 
+
+func _update_animation_frame() -> void:
+	if _animated_sprite == null:
+		return
+
+	var frame_time := Time.get_ticks_msec() / 1000.0
+	var frame_index := floori(frame_time * _belt_animation_fps()) % STRAIGHT_FRAME_COUNT
+	_animated_sprite.frame = frame_index
+
 func _update_animated_sprite() -> void:
 	if _animated_sprite == null:
 		return
 
-	_animated_sprite.rotation = direction_vector().angle()
+	_animated_sprite.rotation = direction_vector().angle() - SOURCE_DIRECTION.angle()
 	_animated_sprite.visible = true
-	_animated_sprite.play(STRAIGHT_ANIMATION)
+	_update_animation_frame()
 	_update_preview_overlay()
 	queue_redraw()
 

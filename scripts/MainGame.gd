@@ -8,6 +8,7 @@ extends Node2D
 @onready var _toolbar: Toolbar = $UI/Toolbar
 @onready var _save_load_dialogs: SaveLoadDialogs = $UI/SaveLoadDialogs
 @onready var _furnace_inventory_dialog: FurnaceInventoryDialog = $UI/FurnaceInventoryDialog
+@onready var _inspection_panel: InspectionPanel = $UI/InspectionPanel
 @onready var _details_panel: PanelContainer = $UI/DetailsPanel
 @onready var _details_label: Label = $UI/DetailsPanel/MarginContainer/DetailsLabel
 
@@ -156,7 +157,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	var mouse_world_position := get_global_mouse_position()
+	var grid_position: Vector2i = _board.world_to_grid(mouse_world_position)
 	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+		var chest := _board.get_building_at_cell(grid_position) as Chest
+		if chest != null and _robot_controller.handle_deposit_command(chest):
+			get_viewport().set_input_as_handled()
+			return
 		if _robot_controller.handle_move_command(mouse_world_position):
 			get_viewport().set_input_as_handled()
 		return
@@ -164,23 +170,36 @@ func _unhandled_input(event: InputEvent) -> void:
 	if mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
 
-	if _robot_controller.handle_left_click(mouse_world_position, mouse_event.shift_pressed):
+	var clicked_robot := _robot_controller.get_robot_at_world_position(mouse_world_position)
+	if clicked_robot != null:
+		_robot_controller.handle_left_click(mouse_world_position, mouse_event.shift_pressed)
+		_inspection_panel.inspect_robot(clicked_robot)
 		get_viewport().set_input_as_handled()
 		return
 
-	var grid_position: Vector2i = _board.world_to_grid(mouse_world_position)
 	if mouse_event.shift_pressed and _factory_simulation.spawn_iron_ore_at(grid_position):
 		get_viewport().set_input_as_handled()
 		return
 
-	var furnace := _board.get_building_at_cell(grid_position) as Furnace
-	if furnace != null:
-		_furnace_inventory_dialog.open_for_furnace(furnace)
+	var building := _board.get_building_at_cell(grid_position)
+	if building != null:
+		if not mouse_event.shift_pressed:
+			_robot_controller.clear_selection()
+		_inspection_panel.inspect_building(building)
+		get_viewport().set_input_as_handled()
+		return
+
+	var deposit := _board.get_resource_at_cell(grid_position)
+	if deposit != null:
+		if not mouse_event.shift_pressed:
+			_robot_controller.clear_selection()
+		_inspection_panel.inspect_resource(grid_position, deposit)
 		get_viewport().set_input_as_handled()
 		return
 
 	if not mouse_event.shift_pressed:
 		_robot_controller.clear_selection()
+		_inspection_panel.clear_inspection()
 
 
 func _process(_delta: float) -> void:
@@ -262,5 +281,3 @@ func _add_key_action(action_name: StringName, keycode: int) -> void:
 	event.keycode = keycode
 	InputMap.add_action(action_name)
 	InputMap.action_add_event(action_name, event)
-
-

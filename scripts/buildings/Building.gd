@@ -66,10 +66,10 @@ func placeable_id() -> String:
 
 
 func placeable_category() -> int:
-	return GameDefinitions.PLACEABLE_DEFINITIONS.get(placeable_id(), {}).get(
+	return int(GameDefinitions.PLACEABLE_DEFINITIONS.get(placeable_id(), {}).get(
 		"category",
 		GameDefinitions.PlaceableCategory.LOGISTICS
-	)
+	))
 
 
 func rotate_clockwise() -> void:

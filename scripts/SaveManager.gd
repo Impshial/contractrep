@@ -5,7 +5,7 @@ const SAVE_STORE_PATH: String = "user://contract_saves.json"
 const LEGACY_SAVE_STORE_PATH: String = "user://factori_no_saves.json"
 const LEGACY_PROJECT_NAME: String = "FactoriNo"
 const LEGACY_SAVE_FILE_NAME: String = "factori_no_saves.json"
-const SAVE_VERSION: int = 5
+const SAVE_VERSION: int = 6
 const THUMBNAIL_SIZE: Vector2i = Vector2i(160, 90)
 
 @export var board_path: NodePath
@@ -16,6 +16,7 @@ const THUMBNAIL_SIZE: Vector2i = Vector2i(160, 90)
 @export var miner_scene: PackedScene
 @export var furnace_scene: PackedScene
 @export var exchanger_scene: PackedScene
+@export var chest_scene: PackedScene
 @export var item_scene: PackedScene
 
 var _board: Board
@@ -43,6 +44,7 @@ func save_game_named(save_name: String) -> bool:
 		"name": trimmed_name,
 		"saved_at": Time.get_datetime_string_from_system(false, true),
 		"world_seed": _board.active_world_seed,
+		"resources": _board.serialize_resources(),
 		"thumbnail": _capture_thumbnail_base64(),
 		"buildings": _serialize_buildings(),
 		"items": _factory_simulation.serialize_items(),
@@ -134,6 +136,10 @@ func _serialize_buildings() -> Array[Dictionary]:
 			entry["coal_count"] = furnace.coal_count
 			entry["iron_plate_count"] = furnace.iron_plate_count
 			entry["smelting_progress"] = furnace.smelting_progress
+
+		var chest := building as Chest
+		if chest != null:
+			entry["inventory"] = chest.serialize_inventory()
 
 		var exchanger := building as Exchanger
 		if exchanger != null:
@@ -230,6 +236,8 @@ func _load_from_data(save_data: Dictionary) -> void:
 	_robot_controller.clear_robots()
 	_clear_buildings()
 	_board.generate_terrain(int(save_data.get("world_seed", Board.DEFAULT_WORLD_SEED)))
+	if save_data.has("resources"):
+		_board.restore_resources(save_data.get("resources", []))
 
 	for entry_variant: Variant in save_data.get("buildings", []):
 		if entry_variant is Dictionary:
@@ -291,6 +299,7 @@ func _load_building(entry: Dictionary) -> void:
 	building.on_placed(_board)
 	_restore_miner_state(building, entry)
 	_restore_furnace_state(building, entry)
+	_restore_chest_state(building, entry)
 	_building_parent.add_child(building)
 	_restore_exchanger_state(building, entry)
 
@@ -318,6 +327,14 @@ func _restore_furnace_state(building: Building, entry: Dictionary) -> void:
 	furnace.smelting_progress = float(entry.get("smelting_progress", furnace.smelting_progress))
 	furnace.queue_redraw()
 
+
+
+func _restore_chest_state(building: Building, entry: Dictionary) -> void:
+	var chest := building as Chest
+	if chest == null:
+		return
+
+	chest.restore_inventory(entry.get("inventory", chest.serialize_inventory()))
 
 func _restore_exchanger_state(building: Building, entry: Dictionary) -> void:
 	var exchanger := building as Exchanger
@@ -350,5 +367,7 @@ func _scene_for_building_type(type_id: String) -> PackedScene:
 			return furnace_scene
 		"exchanger":
 			return exchanger_scene
+		"chest":
+			return chest_scene
 
 	return null

@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=4]
+[gd_scene load_steps=7 format=4]
 
 [ext_resource type="Script" path="res://scripts/ui/Toolbar.gd" id="1_toolbar"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/conveyor.tscn" id="2_conveyor"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/miner.tscn" id="3_miner"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/furnace.tscn" id="4_furnace"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/exchanger.tscn" id="5_exchanger"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/chest.tscn" id="6_chest"]
 
 [node name="Toolbar" type="Control"]
 unique_name_in_owner = true
@@ -22,6 +23,7 @@ conveyor_scene = ExtResource("2_conveyor")
 miner_scene = ExtResource("3_miner")
 furnace_scene = ExtResource("4_furnace")
 exchanger_scene = ExtResource("5_exchanger")
+chest_scene = ExtResource("6_chest")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -72,6 +74,11 @@ layout_mode = 2
 custom_minimum_size = Vector2(126, 48)
 text = "Exchanger"
 
+[node name="ChestButton" type="Button" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(96, 48)
+text = "Chest"
 [node name="RunButton" type="Button" parent="MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

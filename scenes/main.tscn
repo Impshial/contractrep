@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=4]
+[gd_scene load_steps=20 format=4]
 
 [ext_resource type="Script" path="res://scripts/MainGame.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/Board.gd" id="2_board"]
@@ -17,6 +17,8 @@
 [ext_resource type="Script" path="res://scripts/ui/FurnaceInventoryDialog.gd" id="15_furnace_dialog"]
 [ext_resource type="Script" path="res://scripts/robots/RobotController.gd" id="16_robot_controller"]
 [ext_resource type="Script" path="res://scripts/robots/RobotNavigation.gd" id="17_robot_navigation"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/chest.tscn" id="18_chest"]
+[ext_resource type="Script" path="res://scripts/inspection/InspectionPanel.gd" id="19_inspection"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -74,6 +76,7 @@ conveyor_scene = ExtResource("9_conveyor")
 miner_scene = ExtResource("10_miner")
 furnace_scene = ExtResource("13_furnace")
 exchanger_scene = ExtResource("14_exchanger")
+chest_scene = ExtResource("18_chest")
 item_scene = ExtResource("7_iron_ore")
 
 [node name="PlacementController" type="Node2D" parent="."]
@@ -100,6 +103,12 @@ layout_mode = 3
 anchors_preset = 0
 script = ExtResource("15_furnace_dialog")
 
+
+[node name="InspectionPanel" type="PanelContainer" parent="UI"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 0
+script = ExtResource("19_inspection")
 [node name="DetailsPanel" type="PanelContainer" parent="UI"]
 visible = false
 anchors_preset = 0

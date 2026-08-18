@@ -15,7 +15,7 @@ func can_place_on(board: Board, target_grid_position: Vector2i) -> bool:
 	if deposit != null:
 		mined_resource_type = deposit.resource_type
 
-	return board.can_place_at(target_grid_position) and board.has_any_resource_at_cell(target_grid_position)
+	return board.can_place_at(target_grid_position) and _is_supported_deposit(deposit)
 
 
 func on_placed(board: Board) -> void:
@@ -62,6 +62,10 @@ func get_output_item_type() -> int:
 			return FactoryItem.ItemType.COAL
 
 	return FactoryItem.ItemType.IRON_ORE
+
+
+func _is_supported_deposit(deposit: ResourceDeposit) -> bool:
+	return deposit != null and (deposit.resource_id == "iron_ore" or deposit.resource_id == "coal")
 
 
 func placeable_id() -> String:

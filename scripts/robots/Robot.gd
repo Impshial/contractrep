@@ -2,6 +2,7 @@ class_name Robot
 extends Node2D
 
 enum FacingDirection { NORTH, EAST, SOUTH, WEST }
+enum RobotState { IDLE, MOVING, MOVING_TO_CHEST, DEPOSITING }
 
 const ARRIVAL_DISTANCE: float = 3.0
 const SELECTION_RADIUS: float = 20.0
@@ -24,10 +25,13 @@ var destination: Vector2
 var is_moving: bool = false
 var facing_direction: int = FacingDirection.SOUTH
 var visual_offset: Vector2 = Vector2.ZERO
+var inventory := Inventory.new(50)
+var robot_state: int = RobotState.IDLE
 
 var _sprite: Sprite2D
 var _path_points := PackedVector2Array()
 var _path_index: int = 0
+var _deposit_target: Chest
 
 
 func _ready() -> void:
@@ -45,10 +49,13 @@ func configure(new_sprite_index: int, world_position: Vector2) -> void:
 	global_position = world_position
 	destination = world_position
 	is_moving = false
+	robot_state = RobotState.IDLE
 	facing_direction = FacingDirection.SOUTH
 	_path_points.clear()
 	_path_index = 0
+	_deposit_target = null
 	visual_offset = Vector2.ZERO
+	inventory = Inventory.new(50)
 	_apply_sprite_texture()
 	_update_sprite_rotation()
 	_update_visual_offset()
@@ -71,15 +78,16 @@ func contains_world_point(world_position: Vector2) -> bool:
 
 
 func move_to(world_position: Vector2) -> void:
-	set_path(PackedVector2Array([world_position]))
+	set_path(PackedVector2Array([world_position]), RobotState.MOVING)
 
 
-func set_path(world_path: PackedVector2Array) -> void:
+func set_path(world_path: PackedVector2Array, moving_state: int = RobotState.MOVING) -> void:
 	_path_points = world_path
 	_path_index = 0
 
 	if _path_points.is_empty():
 		is_moving = false
+		robot_state = RobotState.IDLE
 		destination = global_position
 		return
 
@@ -88,8 +96,30 @@ func set_path(world_path: PackedVector2Array) -> void:
 
 	destination = _path_points[_path_points.size() - 1]
 	is_moving = _path_index < _path_points.size()
+	robot_state = moving_state if is_moving else RobotState.IDLE
 	if is_moving:
 		_update_facing_from_vector(_path_points[_path_index] - global_position)
+
+
+func start_deposit_to_chest(chest: Chest, world_path: PackedVector2Array) -> void:
+	_deposit_target = chest
+	set_path(world_path, RobotState.MOVING_TO_CHEST)
+
+
+func display_name() -> String:
+	return "Manufacturing Bot %02d" % [sprite_index + 1]
+
+
+func state_display_name() -> String:
+	match robot_state:
+		RobotState.MOVING:
+			return "Moving"
+		RobotState.MOVING_TO_CHEST:
+			return "Moving to Chest"
+		RobotState.DEPOSITING:
+			return "Depositing"
+		_:
+			return "Idle"
 
 
 func serialize() -> Dictionary:
@@ -101,6 +131,8 @@ func serialize() -> Dictionary:
 		"sprite_index": sprite_index,
 		"facing_direction": facing_direction,
 		"is_moving": is_moving,
+		"inventory": inventory.serialize(),
+		"robot_state": robot_state,
 	}
 
 
@@ -109,9 +141,12 @@ func restore(entry: Dictionary) -> void:
 	configure(int(entry.get("sprite_index", 0)), world_position)
 	destination = Vector2(float(entry.get("destination_x", world_position.x)), float(entry.get("destination_y", world_position.y)))
 	facing_direction = int(entry.get("facing_direction", FacingDirection.SOUTH))
+	inventory.restore(entry.get("inventory", inventory.serialize()))
+	robot_state = RobotState.IDLE
 	is_moving = false
 	_path_points.clear()
 	_path_index = 0
+	_deposit_target = null
 	_update_sprite_rotation()
 
 
@@ -121,6 +156,7 @@ func _process(delta: float) -> void:
 
 	if _path_index >= _path_points.size():
 		is_moving = false
+		_handle_path_finished()
 		return
 
 	var waypoint := _path_points[_path_index]
@@ -130,12 +166,26 @@ func _process(delta: float) -> void:
 		_path_index += 1
 		if _path_index >= _path_points.size():
 			is_moving = false
+			_handle_path_finished()
 			return
 		waypoint = _path_points[_path_index]
 		movement_vector = waypoint - global_position
 
 	_update_facing_from_vector(movement_vector)
 	global_position = global_position.move_toward(waypoint, movement_speed * delta)
+
+
+func _handle_path_finished() -> void:
+	if robot_state == RobotState.MOVING_TO_CHEST and _deposit_target != null:
+		robot_state = RobotState.DEPOSITING
+		var transferred := inventory.transfer_all_to(_deposit_target.inventory)
+		if transferred > 0:
+			_deposit_target.queue_redraw()
+		else:
+			print("Robot had nothing to deposit or chest was full.")
+		_deposit_target = null
+
+	robot_state = RobotState.IDLE
 
 
 func _draw() -> void:

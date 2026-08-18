@@ -9,6 +9,8 @@ const ROWS: int = 100
 const CELL_SIZE: int = 48
 const DEFAULT_WORLD_SEED: int = WorldGenerator.DEFAULT_SEED
 
+const RESOURCE_TEXTURE_VARIANT_COUNT: int = 8
+
 enum TerrainType { GROUND, WATER, ROCK, FOREST }
 
 var active_world_seed: int = DEFAULT_WORLD_SEED
@@ -22,7 +24,6 @@ var _world_generator := WorldGenerator.new()
 
 func _ready() -> void:
 	generate_terrain(active_world_seed)
-	_create_fixed_resource_patches()
 
 
 func world_to_grid(world_position: Vector2) -> Vector2i:
@@ -106,6 +107,7 @@ func generate_terrain(seed_value: int) -> void:
 	active_world_seed = seed_value
 	_terrain_cells = terrain_data.get("terrain_cells", {}) as Dictionary
 	_forest_variant_cells = terrain_data.get("forest_variant_cells", {}) as Dictionary
+	_create_resource_cells()
 	terrain_changed.emit()
 	traversability_changed.emit(Vector2i(-1, -1))
 
@@ -113,6 +115,7 @@ func generate_terrain(seed_value: int) -> void:
 func clear_terrain() -> void:
 	_terrain_cells.clear()
 	_forest_variant_cells.clear()
+	_resource_cells.clear()
 
 
 func set_terrain_at_cell(grid_position: Vector2i, terrain_type: int, forest_variant: int = 0) -> void:
@@ -122,8 +125,12 @@ func set_terrain_at_cell(grid_position: Vector2i, terrain_type: int, forest_vari
 	_terrain_cells[grid_position] = terrain_type
 	if terrain_type == TerrainType.FOREST:
 		_forest_variant_cells[grid_position] = forest_variant
+		_resource_cells[grid_position] = ResourceDeposit.from_resource_id("wood", -1, forest_variant)
 	else:
 		_forest_variant_cells.erase(grid_position)
+		var deposit := get_resource_at_cell(grid_position)
+		if deposit != null and deposit.resource_id == "wood":
+			_resource_cells.erase(grid_position)
 
 	terrain_changed.emit()
 	traversability_changed.emit(grid_position)
@@ -140,14 +147,16 @@ func get_forest_variant_at_cell(grid_position: Vector2i) -> int:
 func get_terrain_cells() -> Dictionary:
 	return _terrain_cells
 
+
 func is_robot_terrain_walkable(grid_position: Vector2i) -> bool:
 	if not is_in_bounds(grid_position):
 		return false
 
-	if has_any_resource_at_cell(grid_position):
-		return true
+	var terrain_type := get_terrain_at_cell(grid_position)
+	if terrain_type == TerrainType.FOREST or terrain_type == TerrainType.WATER or terrain_type == TerrainType.ROCK:
+		return false
 
-	return get_terrain_at_cell(grid_position) == TerrainType.GROUND
+	return true
 
 
 func is_robot_walkable_cell(grid_position: Vector2i) -> bool:
@@ -157,8 +166,13 @@ func is_robot_walkable_cell(grid_position: Vector2i) -> bool:
 	var building := get_building_at_cell(grid_position)
 	return building == null or building is Conveyor
 
+
 func get_resource_at_cell(grid_position: Vector2i) -> ResourceDeposit:
-	return _resource_cells.get(grid_position) as ResourceDeposit
+	var deposit := _resource_cells.get(grid_position) as ResourceDeposit
+	if deposit != null and deposit.is_depleted():
+		return null
+
+	return deposit
 
 
 func has_resource_at_cell(grid_position: Vector2i, resource_type: int) -> bool:
@@ -174,22 +188,88 @@ func get_resource_cells() -> Dictionary:
 	return _resource_cells
 
 
+func serialize_resources() -> Array[Dictionary]:
+	var resource_data: Array[Dictionary] = []
+	for key: Variant in _resource_cells.keys():
+		var grid_position: Vector2i = key
+		var deposit := _resource_cells[grid_position] as ResourceDeposit
+		if deposit != null:
+			resource_data.append(deposit.serialize(grid_position))
+
+	return resource_data
+
+
+func restore_resources(resource_data: Array) -> void:
+	for entry_variant: Variant in resource_data:
+		if not (entry_variant is Dictionary):
+			continue
+
+		var entry: Dictionary = entry_variant
+		var grid_position := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		if not is_in_bounds(grid_position):
+			continue
+
+		var resource_id := str(entry.get("resource_id", "iron_ore"))
+		var maximum := int(entry.get("maximum_amount", GameDefinitions.resource_definition(resource_id).get("starting_amount", 1000)))
+		var remaining := int(entry.get("remaining_amount", maximum))
+		var variant := int(entry.get("texture_variant", _resource_variant_for_cell(grid_position, resource_id)))
+		var deposit := ResourceDeposit.from_resource_id(resource_id, maximum, variant)
+		deposit.restore_amount(remaining, maximum)
+		_resource_cells[grid_position] = deposit
+
+	terrain_changed.emit()
+	traversability_changed.emit(Vector2i(-1, -1))
+
+
+func _create_resource_cells() -> void:
+	_resource_cells.clear()
+	_create_forest_resource_cells()
+	_create_fixed_resource_patches()
+
+
+func _create_forest_resource_cells() -> void:
+	for key: Variant in _terrain_cells.keys():
+		var grid_position: Vector2i = key
+		if get_terrain_at_cell(grid_position) == TerrainType.FOREST:
+			_resource_cells[grid_position] = ResourceDeposit.from_resource_id("wood", -1, get_forest_variant_at_cell(grid_position))
+
+
 func _create_fixed_resource_patches() -> void:
 	# Resource data is separate from building occupancy and terrain: miners can sit on deposits.
 	for x: int in range(43, 47):
 		for y: int in range(45, 49):
-			_resource_cells[Vector2i(x, y)] = ResourceDeposit.new(ResourceDeposit.ResourceType.IRON_ORE)
+			_set_resource_deposit(Vector2i(x, y), "iron_ore")
 
 	for x: int in range(54, 58):
 		for y: int in range(51, 54):
-			_resource_cells[Vector2i(x, y)] = ResourceDeposit.new(ResourceDeposit.ResourceType.IRON_ORE)
+			_set_resource_deposit(Vector2i(x, y), "iron_ore")
 
 	for x: int in range(58, 63):
 		for y: int in range(44, 48):
-			_resource_cells[Vector2i(x, y)] = ResourceDeposit.new(ResourceDeposit.ResourceType.COAL)
+			_set_resource_deposit(Vector2i(x, y), "coal")
 
 	for x: int in range(47, 51):
 		for y: int in range(56, 60):
-			_resource_cells[Vector2i(x, y)] = ResourceDeposit.new(ResourceDeposit.ResourceType.COAL)
+			_set_resource_deposit(Vector2i(x, y), "coal")
 
-	traversability_changed.emit(Vector2i(-1, -1))
+
+func _set_resource_deposit(grid_position: Vector2i, resource_id: String) -> void:
+	if not is_in_bounds(grid_position):
+		return
+
+	_terrain_cells[grid_position] = TerrainType.GROUND
+	_forest_variant_cells.erase(grid_position)
+	_resource_cells[grid_position] = ResourceDeposit.from_resource_id(resource_id, -1, _resource_variant_for_cell(grid_position, resource_id))
+
+
+func _resource_variant_for_cell(grid_position: Vector2i, resource_id: String) -> int:
+	var value := active_world_seed
+	value = _mix_int(value, grid_position.x + resource_id.length() * 97)
+	value = _mix_int(value, grid_position.y + resource_id.length() * 131)
+	return absi(value) % RESOURCE_TEXTURE_VARIANT_COUNT
+
+
+func _mix_int(value: int, salt: int) -> int:
+	var mixed := value ^ (salt * 374761393)
+	mixed = (mixed ^ (mixed >> 13)) * 1274126177
+	return mixed ^ (mixed >> 16)

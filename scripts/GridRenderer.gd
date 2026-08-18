@@ -4,12 +4,15 @@ extends Node2D
 @export var board_path: NodePath
 
 const FOREST_VARIANT_COUNT: int = 16
+const GROUND_TEXTURE_VARIANT_COUNT: int = 8
 const GROUND_COLOR: Color = Color(0.58, 0.49, 0.34)
 const WATER_COLOR: Color = Color(0.12, 0.33, 0.56)
 const ROCK_COLOR: Color = Color(0.22, 0.24, 0.24)
 
 var _board: Board
 var _forest_textures: Array[Texture2D] = []
+var _ground_textures: Array[Texture2D] = []
+var _resource_textures: Dictionary = {}
 var _last_canvas_scale: Vector2 = Vector2(-1.0, -1.0)
 var _last_viewport_size: Vector2 = Vector2.ZERO
 
@@ -19,6 +22,8 @@ func _ready() -> void:
 	if _board != null:
 		_board.terrain_changed.connect(_on_board_terrain_changed)
 	_load_forest_textures()
+	_load_ground_textures()
+	_load_resource_textures()
 	_update_draw_state()
 	queue_redraw()
 
@@ -64,6 +69,31 @@ func _load_forest_textures() -> void:
 			_forest_textures.append(texture)
 
 
+func _load_ground_textures() -> void:
+	_ground_textures.clear()
+	for index: int in range(GROUND_TEXTURE_VARIANT_COUNT):
+		var path := "res://assets/terrain/ground/ground_%02d.png" % [index + 1]
+		var texture := load(path) as Texture2D
+		if texture != null:
+			_ground_textures.append(texture)
+
+
+
+func _load_resource_textures() -> void:
+	_resource_textures.clear()
+	_load_resource_texture_set("iron_ore", "res://assets/terrain/resources/iron_ore/iron_ore_%02d.png")
+	_load_resource_texture_set("coal", "res://assets/terrain/resources/coal/coal_%02d.png")
+
+
+func _load_resource_texture_set(resource_id: String, path_pattern: String) -> void:
+	var textures: Array[Texture2D] = []
+	for index: int in range(8):
+		var texture := load(path_pattern % [index + 1]) as Texture2D
+		if texture != null:
+			textures.append(texture)
+
+	_resource_textures[resource_id] = textures
+
 func _draw_terrain() -> void:
 	for x: int in range(Board.COLUMNS):
 		for y: int in range(Board.ROWS):
@@ -78,10 +108,24 @@ func _draw_terrain() -> void:
 				Board.TerrainType.ROCK:
 					draw_rect(cell_rect, ROCK_COLOR, true)
 				Board.TerrainType.FOREST:
-					draw_rect(cell_rect, GROUND_COLOR, true)
+					_draw_ground_tile(grid_position, cell_rect)
 					_draw_forest_tile(grid_position, cell_rect)
 				_:
-					draw_rect(cell_rect, GROUND_COLOR, true)
+					_draw_ground_tile(grid_position, cell_rect)
+
+
+func _draw_ground_tile(grid_position: Vector2i, cell_rect: Rect2) -> void:
+	if _ground_textures.is_empty():
+		draw_rect(cell_rect, GROUND_COLOR, true)
+		return
+
+	var variant_index := _ground_variant_for_cell(grid_position)
+	var texture := _ground_textures[variant_index]
+	if texture == null:
+		draw_rect(cell_rect, GROUND_COLOR, true)
+		return
+
+	draw_texture_rect(texture, cell_rect, false)
 
 
 func _draw_forest_tile(grid_position: Vector2i, cell_rect: Rect2) -> void:
@@ -100,24 +144,32 @@ func _draw_resource_deposits() -> void:
 	for key: Variant in _board.get_resource_cells().keys():
 		var grid_position: Vector2i = key
 		var deposit := _board.get_resource_at_cell(grid_position)
-		if deposit == null:
+		if deposit == null or deposit.resource_id == "wood":
 			continue
 
 		var cell_origin := Vector2(grid_position.x * Board.CELL_SIZE, grid_position.y * Board.CELL_SIZE)
-		var deposit_rect := Rect2(cell_origin + Vector2(4.0, 4.0), Vector2(Board.CELL_SIZE - 8.0, Board.CELL_SIZE - 8.0))
+		var cell_rect := Rect2(cell_origin, Vector2(Board.CELL_SIZE, Board.CELL_SIZE))
+		var textures: Array = _resource_textures.get(deposit.resource_id, [])
+		if textures.is_empty():
+			draw_rect(cell_rect, Color(0.33, 0.21, 0.14), true)
+			continue
 
-		if deposit.resource_type == ResourceDeposit.ResourceType.COAL:
-			draw_rect(deposit_rect, Color(0.04, 0.05, 0.05), true)
-			draw_rect(deposit_rect, Color(0.35, 0.40, 0.39), false, 2.0)
-			draw_circle(cell_origin + Vector2(16.0, 18.0), 6.0, Color(0.12, 0.14, 0.14))
-			draw_circle(cell_origin + Vector2(31.0, 27.0), 7.0, Color(0.02, 0.025, 0.025))
-			draw_circle(cell_origin + Vector2(22.0, 34.0), 4.0, Color(0.28, 0.31, 0.30))
-		else:
-			draw_rect(deposit_rect, Color(0.33, 0.21, 0.14), true)
-			draw_rect(deposit_rect, Color(0.78, 0.47, 0.24), false, 2.0)
-			draw_circle(cell_origin + Vector2(17.0, 17.0), 5.0, Color(0.95, 0.64, 0.31))
-			draw_circle(cell_origin + Vector2(31.0, 28.0), 6.0, Color(0.70, 0.39, 0.20))
-			draw_circle(cell_origin + Vector2(23.0, 34.0), 4.0, Color(1.0, 0.74, 0.41))
+		var texture := textures[deposit.texture_variant % textures.size()] as Texture2D
+		if texture != null:
+			draw_texture_rect(texture, cell_rect, false)
+
+
+func _ground_variant_for_cell(grid_position: Vector2i) -> int:
+	var value := _board.active_world_seed
+	value = _mix_int(value, grid_position.x + 0x51ED)
+	value = _mix_int(value, grid_position.y + 0xA341)
+	return absi(value) % _ground_textures.size()
+
+
+func _mix_int(value: int, salt: int) -> int:
+	var mixed := value ^ (salt * 374761393)
+	mixed = (mixed ^ (mixed >> 13)) * 1274126177
+	return mixed ^ (mixed >> 16)
 
 
 func _on_board_terrain_changed() -> void:

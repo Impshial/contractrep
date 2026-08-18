@@ -10,11 +10,13 @@ signal load_requested()
 @export var miner_scene: PackedScene
 @export var furnace_scene: PackedScene
 @export var exchanger_scene: PackedScene
+@export var chest_scene: PackedScene
 
 @onready var _conveyor_button: Button = %ConveyorButton
 @onready var _miner_button: Button = %MinerButton
 @onready var _furnace_button: Button = %FurnaceButton
 @onready var _exchanger_button: Button = %ExchangerButton
+@onready var _chest_button: Button = %ChestButton
 @onready var _run_button: Button = %RunButton
 @onready var _save_button: Button = %SaveButton
 @onready var _load_button: Button = %LoadButton
@@ -25,6 +27,7 @@ func _ready() -> void:
 	_miner_button.pressed.connect(_on_miner_button_pressed)
 	_furnace_button.pressed.connect(_on_furnace_button_pressed)
 	_exchanger_button.pressed.connect(_on_exchanger_button_pressed)
+	_chest_button.pressed.connect(_on_chest_button_pressed)
 	_run_button.toggled.connect(_on_run_button_toggled)
 	_save_button.pressed.connect(_on_save_button_pressed)
 	_load_button.pressed.connect(_on_load_button_pressed)
@@ -44,6 +47,10 @@ func _on_furnace_button_pressed() -> void:
 
 func _on_exchanger_button_pressed() -> void:
 	building_selected.emit(exchanger_scene)
+
+
+func _on_chest_button_pressed() -> void:
+	building_selected.emit(chest_scene)
 
 
 func _on_run_button_toggled(running: bool) -> void:
