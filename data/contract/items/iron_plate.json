@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:iron_plate",
+	"legacy_id": "iron_plate",
+	"legacy_item_type": 2,
+	"type": "item",
+	"display_name": "Iron Plate",
+	"description": "Smelted iron plate.",
+	"icon": "assets/resources/iron_plate.png",
+	"category": "intermediate",
+	"stack_size": 100,
+	"stackable": true,
+	"belt_compatible": true,
+	"tags": ["intermediate", "crafted"]
+}

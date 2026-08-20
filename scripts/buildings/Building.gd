@@ -41,6 +41,26 @@ func supports_logistics_interface() -> bool:
 	return false
 
 
+func is_container() -> bool:
+	return false
+
+
+func container_inventory() -> Inventory:
+	return null
+
+
+func has_visual_inventory() -> bool:
+	return false
+
+
+func visual_inventory() -> Inventory:
+	return null
+
+
+func inventory_display_name() -> String:
+	return GameDefinitions.placeable_display_name(placeable_id())
+
+
 func can_accept_factory_item(_item_type: int) -> bool:
 	return false
 
@@ -66,10 +86,7 @@ func placeable_id() -> String:
 
 
 func placeable_category() -> int:
-	return int(GameDefinitions.PLACEABLE_DEFINITIONS.get(placeable_id(), {}).get(
-		"category",
-		GameDefinitions.PlaceableCategory.LOGISTICS
-	))
+	return GameDefinitions.placeable_category(placeable_id())
 
 
 func rotate_clockwise() -> void:

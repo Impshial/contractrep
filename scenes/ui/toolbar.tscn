@@ -78,7 +78,14 @@ text = "Exchanger"
 unique_name_in_owner = true
 layout_mode = 2
 custom_minimum_size = Vector2(96, 48)
-text = "Chest"
+text = "Container"
+
+[node name="AddBotButton" type="Button" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(96, 48)
+text = "New Bot"
+
 [node name="RunButton" type="Button" parent="MarginContainer/HBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -86,20 +93,14 @@ custom_minimum_size = Vector2(96, 48)
 toggle_mode = true
 text = "Run"
 
-[node name="SaveButton" type="Button" parent="MarginContainer/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(88, 48)
-text = "Save"
-
-[node name="LoadButton" type="Button" parent="MarginContainer/HBoxContainer"]
-unique_name_in_owner = true
-layout_mode = 2
-custom_minimum_size = Vector2(88, 48)
-text = "Load"
-
 [node name="HintLabel" type="Label" parent="MarginContainer/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 vertical_alignment = 1
-text = "F5 Save / F9 Load"
+text = "Esc Menu"
+
+[node name="GridCheckBox" type="CheckBox" parent="MarginContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Grid"

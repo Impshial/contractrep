@@ -3,8 +3,8 @@ extends Control
 
 signal building_selected(building_scene: PackedScene)
 signal run_toggled(running: bool)
-signal save_requested()
-signal load_requested()
+signal add_bot_requested()
+signal grid_toggled(visible: bool)
 
 @export var conveyor_scene: PackedScene
 @export var miner_scene: PackedScene
@@ -17,9 +17,9 @@ signal load_requested()
 @onready var _furnace_button: Button = %FurnaceButton
 @onready var _exchanger_button: Button = %ExchangerButton
 @onready var _chest_button: Button = %ChestButton
+@onready var _add_bot_button: Button = %AddBotButton
 @onready var _run_button: Button = %RunButton
-@onready var _save_button: Button = %SaveButton
-@onready var _load_button: Button = %LoadButton
+@onready var _grid_check_box: CheckBox = %GridCheckBox
 
 
 func _ready() -> void:
@@ -28,9 +28,9 @@ func _ready() -> void:
 	_furnace_button.pressed.connect(_on_furnace_button_pressed)
 	_exchanger_button.pressed.connect(_on_exchanger_button_pressed)
 	_chest_button.pressed.connect(_on_chest_button_pressed)
+	_add_bot_button.pressed.connect(_on_add_bot_button_pressed)
 	_run_button.toggled.connect(_on_run_button_toggled)
-	_save_button.pressed.connect(_on_save_button_pressed)
-	_load_button.pressed.connect(_on_load_button_pressed)
+	_grid_check_box.toggled.connect(_on_grid_check_box_toggled)
 
 
 func _on_conveyor_button_pressed() -> void:
@@ -53,6 +53,10 @@ func _on_chest_button_pressed() -> void:
 	building_selected.emit(chest_scene)
 
 
+func _on_add_bot_button_pressed() -> void:
+	add_bot_requested.emit()
+
+
 func _on_run_button_toggled(running: bool) -> void:
 	_run_button.text = "Pause" if running else "Run"
 	run_toggled.emit(running)
@@ -63,9 +67,5 @@ func set_running_visual(running: bool) -> void:
 	_run_button.text = "Pause" if running else "Run"
 
 
-func _on_save_button_pressed() -> void:
-	save_requested.emit()
-
-
-func _on_load_button_pressed() -> void:
-	load_requested.emit()
+func _on_grid_check_box_toggled(visible: bool) -> void:
+	grid_toggled.emit(visible)

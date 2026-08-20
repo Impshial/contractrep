@@ -1,7 +1,7 @@
 class_name ResourceDeposit
 extends RefCounted
 
-enum ResourceType { IRON_ORE, COAL, WOOD }
+enum ResourceType { IRON_ORE, COAL, WOOD, STONE }
 
 var resource_type: int = ResourceType.IRON_ORE
 var resource_id: String = "iron_ore"
@@ -21,7 +21,7 @@ func _init(new_resource_type: int = ResourceType.IRON_ORE, amount: int = -1, var
 
 static func from_resource_id(new_resource_id: String, amount: int = -1, variant: int = 0) -> ResourceDeposit:
 	var deposit := ResourceDeposit.new(_resource_type_for_id(new_resource_id), amount, variant)
-	deposit.resource_id = new_resource_id
+	deposit.resource_id = DefinitionManager.legacy_resource_id(new_resource_id)
 	var definition := GameDefinitions.resource_definition(new_resource_id)
 	deposit.maximum_amount = int(definition.get("starting_amount", 1000)) if amount < 0 else amount
 	deposit.remaining_amount = deposit.maximum_amount
@@ -39,6 +39,10 @@ func resource_name() -> String:
 
 func inventory_item_id() -> String:
 	return str(GameDefinitions.resource_definition(resource_id).get("inventory_item_id", resource_id))
+
+
+func is_harvestable() -> bool:
+	return bool(GameDefinitions.resource_definition(resource_id).get("harvestable", false)) and not is_depleted()
 
 
 func is_depleted() -> bool:
@@ -64,7 +68,8 @@ func serialize(grid_position: Vector2i) -> Dictionary:
 	return {
 		"x": grid_position.x,
 		"y": grid_position.y,
-		"resource_id": resource_id,
+		"resource_id": DefinitionManager.normalize_resource_id(resource_id),
+		"legacy_resource_id": resource_id,
 		"resource_type": resource_type,
 		"remaining_amount": remaining_amount,
 		"maximum_amount": maximum_amount,
@@ -78,15 +83,19 @@ static func _resource_id_for_type(type_id: int) -> String:
 			return "coal"
 		ResourceType.WOOD:
 			return "wood"
+		ResourceType.STONE:
+			return "stone"
 		_:
 			return "iron_ore"
 
 
 static func _resource_type_for_id(new_resource_id: String) -> int:
-	match new_resource_id:
+	match DefinitionManager.legacy_resource_id(new_resource_id):
 		"coal":
 			return ResourceType.COAL
 		"wood":
 			return ResourceType.WOOD
+		"stone":
+			return ResourceType.STONE
 		_:
 			return ResourceType.IRON_ORE

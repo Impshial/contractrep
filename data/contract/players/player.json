@@ -1,0 +1,11 @@
+{
+	"schema_version": 1,
+	"id": "contract:player",
+	"type": "player",
+	"display_name": "Player",
+	"inventory": {
+		"storage_slots": 30,
+		"slots_per_row": 10,
+		"stack_size": 100
+	}
+}

@@ -1,0 +1,24 @@
+{
+	"schema_version": 1,
+	"id": "contract:stone_deposit",
+	"legacy_id": "stone",
+	"type": "resource",
+	"display_name": "Stone Deposit",
+	"resource_name": "Stone",
+	"produces_item": "contract:stone",
+	"starting_amount": 700,
+	"harvestable": true,
+	"terrain_blocking": true,
+	"texture_prefix": "stone",
+	"texture_variant_count": 8,
+	"textures": [
+		"assets/terrain/resources/stone/stone_01.png",
+		"assets/terrain/resources/stone/stone_02.png",
+		"assets/terrain/resources/stone/stone_03.png",
+		"assets/terrain/resources/stone/stone_04.png",
+		"assets/terrain/resources/stone/stone_05.png",
+		"assets/terrain/resources/stone/stone_06.png",
+		"assets/terrain/resources/stone/stone_07.png",
+		"assets/terrain/resources/stone/stone_08.png"
+	]
+}

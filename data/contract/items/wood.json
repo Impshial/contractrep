@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:wood",
+	"legacy_id": "wood",
+	"legacy_item_type": 4,
+	"type": "item",
+	"display_name": "Lumber",
+	"description": "Harvested lumber.",
+	"icon": "assets/resources/wood.png",
+	"category": "resource",
+	"stack_size": 100,
+	"stackable": true,
+	"belt_compatible": true,
+	"tags": ["raw_resource", "wood", "harvestable"]
+}

@@ -1,0 +1,8 @@
+{
+	"schema_version": 1,
+	"id": "basic_bot_slow_harvest",
+	"name": "Basic Bot Slow Harvest Example",
+	"version": "0.1.0",
+	"author": "Contract",
+	"dependencies": ["contract"]
+}

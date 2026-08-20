@@ -1,0 +1,24 @@
+{
+	"schema_version": 1,
+	"id": "contract:coal_deposit",
+	"legacy_id": "coal",
+	"type": "resource",
+	"display_name": "Coal Deposit",
+	"resource_name": "Coal",
+	"produces_item": "contract:coal",
+	"starting_amount": 1000,
+	"harvestable": true,
+	"terrain_blocking": true,
+	"texture_prefix": "coal",
+	"texture_variant_count": 8,
+	"textures": [
+		"assets/terrain/resources/coal/coal_01.png",
+		"assets/terrain/resources/coal/coal_02.png",
+		"assets/terrain/resources/coal/coal_03.png",
+		"assets/terrain/resources/coal/coal_04.png",
+		"assets/terrain/resources/coal/coal_05.png",
+		"assets/terrain/resources/coal/coal_06.png",
+		"assets/terrain/resources/coal/coal_07.png",
+		"assets/terrain/resources/coal/coal_08.png"
+	]
+}

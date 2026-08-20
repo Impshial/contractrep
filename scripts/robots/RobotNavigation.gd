@@ -1,8 +1,9 @@
 class_name RobotNavigation
 extends Node
 
-const INVALID_CELL: Vector2i = Vector2i(-1, -1)
+const INVALID_CELL: Vector2i = Vector2i(-999999999, -999999999)
 const DESTINATION_SEARCH_RADIUS: int = 12
+const PATH_REGION_PADDING: int = 16
 
 @export var board_path: NodePath
 
@@ -13,9 +14,6 @@ var _is_ready: bool = false
 
 func _ready() -> void:
 	_board = get_node(board_path) as Board
-	_configure_grid()
-	_rebuild_all_points()
-	_board.terrain_changed.connect(_on_terrain_changed)
 	_board.traversability_changed.connect(_on_traversability_changed)
 
 
@@ -23,6 +21,7 @@ func get_path_cells(start_cell: Vector2i, target_cell: Vector2i) -> Array[Vector
 	if not _can_query_path(start_cell, target_cell):
 		return []
 
+	_configure_grid_for_path(start_cell, target_cell)
 	var path_cells: Array[Vector2i] = []
 	for cell: Vector2i in _astar.get_id_path(start_cell, target_cell):
 		path_cells.append(cell)
@@ -50,43 +49,71 @@ func find_reachable_destination(start_cell: Vector2i, requested_cell: Vector2i, 
 	return INVALID_CELL
 
 
+func find_reachable_adjacent_destination(start_cell: Vector2i, target_cell: Vector2i, reserved_cells: Dictionary = {}) -> Vector2i:
+	var candidates: Array[Vector2i] = [
+		target_cell + Vector2i(0, -1),
+		target_cell + Vector2i(1, -1),
+		target_cell + Vector2i(1, 0),
+		target_cell + Vector2i(1, 1),
+		target_cell + Vector2i(0, 1),
+		target_cell + Vector2i(-1, 1),
+		target_cell + Vector2i(-1, 0),
+		target_cell + Vector2i(-1, -1),
+	]
+	candidates.sort_custom(_sort_candidates_by_distance_to_start.bind(start_cell))
+
+	for candidate: Vector2i in candidates:
+		if _is_usable_destination(start_cell, candidate, reserved_cells):
+			return candidate
+
+	return INVALID_CELL
+
+
 func refresh_cell(grid_position: Vector2i) -> void:
 	if not _is_ready:
 		return
 
-	if grid_position == INVALID_CELL:
-		_rebuild_all_points()
+	if grid_position == Board.REFRESH_ALL_CELLS:
+		_rebuild_region_points()
 		return
 
-	if not _board.is_in_bounds(grid_position):
+	if not _board.is_in_bounds(grid_position) or not _astar.region.has_point(grid_position):
 		return
 
 	_astar.set_point_solid(grid_position, not _board.is_robot_walkable_cell(grid_position))
 
 
-func _configure_grid() -> void:
-	_astar.region = Rect2i(0, 0, Board.COLUMNS, Board.ROWS)
+func _configure_grid_for_path(start_cell: Vector2i, target_cell: Vector2i) -> void:
+	var min_x := mini(start_cell.x, target_cell.x) - PATH_REGION_PADDING
+	var min_y := mini(start_cell.y, target_cell.y) - PATH_REGION_PADDING
+	var max_x := maxi(start_cell.x, target_cell.x) + PATH_REGION_PADDING
+	var max_y := maxi(start_cell.y, target_cell.y) + PATH_REGION_PADDING
+	var new_region := Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+	if _is_ready and _astar.region == new_region:
+		return
+
+	_astar.region = new_region
 	_astar.cell_size = Vector2(Board.CELL_SIZE, Board.CELL_SIZE)
-	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_NEVER
-	_astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
-	_astar.default_estimate_heuristic = AStarGrid2D.HEURISTIC_MANHATTAN
+	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_AT_LEAST_ONE_WALKABLE
+	_astar.default_compute_heuristic = AStarGrid2D.HEURISTIC_OCTILE
+	_astar.default_estimate_heuristic = AStarGrid2D.HEURISTIC_OCTILE
 	_astar.update()
 	_is_ready = true
+	_rebuild_region_points()
 
 
-func _rebuild_all_points() -> void:
+func _rebuild_region_points() -> void:
 	if not _is_ready:
 		return
 
-	for x: int in range(Board.COLUMNS):
-		for y: int in range(Board.ROWS):
+	for x: int in range(_astar.region.position.x, _astar.region.position.x + _astar.region.size.x):
+		for y: int in range(_astar.region.position.y, _astar.region.position.y + _astar.region.size.y):
 			refresh_cell(Vector2i(x, y))
 
 
 func _can_query_path(start_cell: Vector2i, target_cell: Vector2i) -> bool:
 	return (
-		_is_ready
-		and _board.is_in_bounds(start_cell)
+		_board.is_in_bounds(start_cell)
 		and _board.is_in_bounds(target_cell)
 		and _board.is_robot_walkable_cell(start_cell)
 		and _board.is_robot_walkable_cell(target_cell)
@@ -126,8 +153,13 @@ func _sort_candidates_by_distance_to_center(a: Vector2i, b: Vector2i, center_cel
 	return distance_a < distance_b
 
 
-func _on_terrain_changed() -> void:
-	_rebuild_all_points()
+func _sort_candidates_by_distance_to_start(a: Vector2i, b: Vector2i, start_cell: Vector2i) -> bool:
+	var distance_a: int = absi(a.x - start_cell.x) + absi(a.y - start_cell.y)
+	var distance_b: int = absi(b.x - start_cell.x) + absi(b.y - start_cell.y)
+	if distance_a == distance_b:
+		return a.y < b.y if a.x == b.x else a.x < b.x
+
+	return distance_a < distance_b
 
 
 func _on_traversability_changed(grid_position: Vector2i) -> void:

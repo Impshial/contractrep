@@ -7,20 +7,25 @@ const FOREST_VARIANT_COUNT: int = 16
 const GROUND_TEXTURE_VARIANT_COUNT: int = 8
 const GROUND_COLOR: Color = Color(0.58, 0.49, 0.34)
 const WATER_COLOR: Color = Color(0.12, 0.33, 0.56)
-const ROCK_COLOR: Color = Color(0.22, 0.24, 0.24)
+const ROCK_COLOR: Color = Color(0.48, 0.36, 0.27)
+const MAX_RENDERED_COLUMNS: int = 96
+const MAX_RENDERED_ROWS: int = 72
 
 var _board: Board
 var _forest_textures: Array[Texture2D] = []
 var _ground_textures: Array[Texture2D] = []
 var _resource_textures: Dictionary = {}
 var _last_canvas_scale: Vector2 = Vector2(-1.0, -1.0)
+var _last_canvas_origin: Vector2 = Vector2(INF, INF)
 var _last_viewport_size: Vector2 = Vector2.ZERO
+var _grid_visible: bool = true
 
 
 func _ready() -> void:
 	_board = get_node(board_path) as Board
 	if _board != null:
 		_board.terrain_changed.connect(_on_board_terrain_changed)
+		_board.resource_changed.connect(_on_board_resource_changed)
 	_load_forest_textures()
 	_load_ground_textures()
 	_load_resource_textures()
@@ -43,21 +48,35 @@ func _draw() -> void:
 	if _board == null:
 		return
 
-	var board_size: Vector2 = _board.board_size_pixels()
+	var visible_cells := _visible_cell_rect(2)
 	var line_width: float = _screen_pixel_width(1.0)
-	var border_width: float = _screen_pixel_width(2.0)
 
-	_draw_terrain()
-	_draw_resource_deposits()
-	draw_rect(Rect2(Vector2.ZERO, board_size), Color(0.45, 0.55, 0.5), false, border_width)
+	_draw_terrain(visible_cells)
+	_draw_resource_deposits(visible_cells)
+	if not _grid_visible:
+		return
 
-	for column: int in range(Board.COLUMNS + 1):
+	var start_x := visible_cells.position.x
+	var end_x := visible_cells.position.x + visible_cells.size.x
+	var start_y := visible_cells.position.y
+	var end_y := visible_cells.position.y + visible_cells.size.y
+	var grid_color := Color(0.28, 0.34, 0.32)
+
+	for column: int in range(start_x, end_x + 1):
 		var x: float = column * Board.CELL_SIZE
-		draw_line(Vector2(x, 0.0), Vector2(x, board_size.y), Color(0.28, 0.34, 0.32), line_width)
+		draw_line(Vector2(x, start_y * Board.CELL_SIZE), Vector2(x, end_y * Board.CELL_SIZE), grid_color, line_width)
 
-	for row: int in range(Board.ROWS + 1):
+	for row: int in range(start_y, end_y + 1):
 		var y: float = row * Board.CELL_SIZE
-		draw_line(Vector2(0.0, y), Vector2(board_size.x, y), Color(0.28, 0.34, 0.32), line_width)
+		draw_line(Vector2(start_x * Board.CELL_SIZE, y), Vector2(end_x * Board.CELL_SIZE, y), grid_color, line_width)
+
+
+func set_grid_visible(grid_visible: bool) -> void:
+	if _grid_visible == grid_visible:
+		return
+
+	_grid_visible = grid_visible
+	queue_redraw()
 
 
 func _load_forest_textures() -> void:
@@ -81,22 +100,18 @@ func _load_ground_textures() -> void:
 
 func _load_resource_textures() -> void:
 	_resource_textures.clear()
-	_load_resource_texture_set("iron_ore", "res://assets/terrain/resources/iron_ore/iron_ore_%02d.png")
-	_load_resource_texture_set("coal", "res://assets/terrain/resources/coal/coal_%02d.png")
+	for definition: Dictionary in DefinitionManager.definitions("resource").values():
+		var textures: Array[Texture2D] = []
+		for path: String in DefinitionManager.resolved_resource_texture_paths(str(definition.get("id", ""))):
+			var texture := load(path) as Texture2D
+			if texture != null:
+				textures.append(texture)
 
+		_resource_textures[str(definition.get("legacy_id", definition.get("id", "")))] = textures
 
-func _load_resource_texture_set(resource_id: String, path_pattern: String) -> void:
-	var textures: Array[Texture2D] = []
-	for index: int in range(8):
-		var texture := load(path_pattern % [index + 1]) as Texture2D
-		if texture != null:
-			textures.append(texture)
-
-	_resource_textures[resource_id] = textures
-
-func _draw_terrain() -> void:
-	for x: int in range(Board.COLUMNS):
-		for y: int in range(Board.ROWS):
+func _draw_terrain(visible_cells: Rect2i) -> void:
+	for x: int in range(visible_cells.position.x, visible_cells.position.x + visible_cells.size.x):
+		for y: int in range(visible_cells.position.y, visible_cells.position.y + visible_cells.size.y):
 			var grid_position := Vector2i(x, y)
 			var cell_origin := Vector2(x * Board.CELL_SIZE, y * Board.CELL_SIZE)
 			var cell_rect := Rect2(cell_origin, Vector2(Board.CELL_SIZE, Board.CELL_SIZE))
@@ -140,8 +155,8 @@ func _draw_forest_tile(grid_position: Vector2i, cell_rect: Rect2) -> void:
 	draw_texture_rect(texture, cell_rect, false)
 
 
-func _draw_resource_deposits() -> void:
-	for key: Variant in _board.get_resource_cells().keys():
+func _draw_resource_deposits(visible_cells: Rect2i) -> void:
+	for key: Variant in _board.get_resource_cells_in_rect(visible_cells).keys():
 		var grid_position: Vector2i = key
 		var deposit := _board.get_resource_at_cell(grid_position)
 		if deposit == null or deposit.resource_id == "wood":
@@ -176,19 +191,31 @@ func _on_board_terrain_changed() -> void:
 	queue_redraw()
 
 
+func _on_board_resource_changed(_grid_position: Vector2i) -> void:
+	queue_redraw()
+
+
 func _redraw_after_resize() -> void:
 	_update_draw_state()
 	queue_redraw()
 
 
 func _draw_state_changed() -> bool:
-	var canvas_scale := _current_canvas_scale()
+	var canvas_transform := get_viewport().get_canvas_transform()
+	var canvas_scale := canvas_transform.get_scale()
+	var canvas_origin := canvas_transform.origin
 	var viewport_size := get_viewport_rect().size
-	return not canvas_scale.is_equal_approx(_last_canvas_scale) or not viewport_size.is_equal_approx(_last_viewport_size)
+	return (
+		not canvas_scale.is_equal_approx(_last_canvas_scale)
+		or not canvas_origin.is_equal_approx(_last_canvas_origin)
+		or not viewport_size.is_equal_approx(_last_viewport_size)
+	)
 
 
 func _update_draw_state() -> void:
-	_last_canvas_scale = _current_canvas_scale()
+	var canvas_transform := get_viewport().get_canvas_transform()
+	_last_canvas_scale = canvas_transform.get_scale()
+	_last_canvas_origin = canvas_transform.origin
 	_last_viewport_size = get_viewport_rect().size
 
 
@@ -201,3 +228,24 @@ func _screen_pixel_width(screen_pixels: float) -> float:
 func _current_canvas_scale() -> Vector2:
 	var transform := get_viewport().get_canvas_transform()
 	return transform.get_scale()
+
+
+func _visible_cell_rect(padding: int) -> Rect2i:
+	var viewport_size := get_viewport_rect().size
+	var inverse_canvas := get_viewport().get_canvas_transform().affine_inverse()
+	var top_left := to_local(inverse_canvas * Vector2.ZERO)
+	var bottom_right := to_local(inverse_canvas * viewport_size)
+	var min_x := floori(minf(top_left.x, bottom_right.x) / Board.CELL_SIZE) - padding
+	var max_x := ceili(maxf(top_left.x, bottom_right.x) / Board.CELL_SIZE) + padding
+	var min_y := floori(minf(top_left.y, bottom_right.y) / Board.CELL_SIZE) - padding
+	var max_y := ceili(maxf(top_left.y, bottom_right.y) / Board.CELL_SIZE) + padding
+	if max_x - min_x > MAX_RENDERED_COLUMNS:
+		var center_x := floori(float(min_x + max_x) * 0.5)
+		min_x = center_x - int(MAX_RENDERED_COLUMNS * 0.5)
+		max_x = min_x + MAX_RENDERED_COLUMNS
+	if max_y - min_y > MAX_RENDERED_ROWS:
+		var center_y := floori(float(min_y + max_y) * 0.5)
+		min_y = center_y - int(MAX_RENDERED_ROWS * 0.5)
+		max_y = min_y + MAX_RENDERED_ROWS
+
+	return Rect2i(min_x, min_y, maxi(1, max_x - min_x), maxi(1, max_y - min_y))

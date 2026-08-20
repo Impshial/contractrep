@@ -1,0 +1,13 @@
+{
+	"schema_version": 1,
+	"id": "contract:exchanger",
+	"legacy_id": "exchanger",
+	"type": "building",
+	"display_name": "Exchanger",
+	"description": "Moves items between a building and a belt line.",
+	"behavior": "exchanger",
+	"category": "logistics",
+	"texture": "assets/buildings/exchanger.png",
+	"transfer_duration_seconds": 0.75,
+	"tags": ["logistics", "loader"]
+}

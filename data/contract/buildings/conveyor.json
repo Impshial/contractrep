@@ -1,0 +1,14 @@
+{
+	"schema_version": 1,
+	"id": "contract:conveyor",
+	"legacy_id": "conveyor",
+	"type": "building",
+	"display_name": "Conveyor",
+	"description": "Moves items between machines.",
+	"behavior": "conveyor",
+	"category": "logistics",
+	"texture": "assets/conveyors/conveyor_green_idle_48.png",
+	"belt_seconds_per_tile": 0.5,
+	"max_stacked_items": 6,
+	"tags": ["logistics", "belt"]
+}

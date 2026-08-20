@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:wood",
+	"legacy_id": "wood",
+	"type": "resource",
+	"display_name": "Tree",
+	"resource_name": "Wood",
+	"produces_item": "contract:wood",
+	"starting_amount": 300,
+	"harvestable": true,
+	"terrain_blocking": true,
+	"texture_prefix": "",
+	"texture_variant_count": 0,
+	"textures": []
+}

@@ -45,15 +45,15 @@ func release_item() -> FactoryItem:
 
 
 func advance_transfer(delta_seconds: float) -> void:
-	transfer_progress = minf(transfer_progress + delta_seconds, TRANSFER_DURATION_SECONDS)
+	transfer_progress = minf(transfer_progress + delta_seconds, _transfer_duration_seconds())
 
 
 func can_transfer() -> bool:
-	return transfer_progress >= TRANSFER_DURATION_SECONDS
+	return transfer_progress >= _transfer_duration_seconds()
 
 
 func consume_transfer_charge() -> void:
-	transfer_progress = maxf(transfer_progress - TRANSFER_DURATION_SECONDS, 0.0)
+	transfer_progress = maxf(transfer_progress - _transfer_duration_seconds(), 0.0)
 
 
 func has_valid_output_path_for_item(item_type: int, board: Board) -> bool:
@@ -108,6 +108,10 @@ func rotate_clockwise() -> void:
 
 func placeable_id() -> String:
 	return "exchanger"
+
+
+func _transfer_duration_seconds() -> float:
+	return float(GameDefinitions.placeable_definition(placeable_id()).get("transfer_duration_seconds", TRANSFER_DURATION_SECONDS))
 
 
 func _draw() -> void:

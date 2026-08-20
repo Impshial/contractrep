@@ -1,0 +1,19 @@
+{
+	"schema_version": 1,
+	"id": "contract:basic_bot",
+	"legacy_id": "basic_bot",
+	"type": "bot",
+	"display_name": "Basic Bot",
+	"sprite": "assets/robots/robot_04.png",
+	"sprite_index": 3,
+	"inventory_capacity": 75,
+	"movement": {
+		"speed": 200.0
+	},
+	"harvest": {
+		"enabled": true,
+		"cycle_seconds": 2.5,
+		"units_per_cycle": 50
+	},
+	"capabilities": ["harvest", "haul"]
+}

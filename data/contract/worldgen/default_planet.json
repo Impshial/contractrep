@@ -1,0 +1,31 @@
+{
+	"schema_version": 1,
+	"id": "contract:default_planet",
+	"type": "worldgen",
+	"display_name": "Default Planet",
+	"default_seed": 847291,
+	"noise_frequency": 0.032,
+	"starting_area_size": {"x": 20, "y": 15},
+	"resource_region_size": 64,
+	"guaranteed_spawn_resource_radius": 25.0,
+	"guaranteed_spawn_resource_min_radius": 7.0,
+	"random_resource_start_exclusion_radius": 25.0,
+	"resource_edge_richness": 0.35,
+	"resource_center_richness": 1.65,
+	"resource_richness_noise": 0.18,
+	"resource_field_edge_margin": 2,
+	"resource_field_base_cell_density": 0.82,
+	"resource_field_edge_cell_density": 0.42,
+	"resources": [
+		{"resource": "contract:stone_deposit", "legacy_resource_id": "stone", "region_chance": 0.30, "starter_salt": 22433, "regional_salt_x": 7907, "regional_salt_y": 9719},
+		{"resource": "contract:coal_deposit", "legacy_resource_id": "coal", "region_chance": 0.18, "starter_salt": 49217, "regional_salt_x": 7907, "regional_salt_y": 9719},
+		{"resource": "contract:iron_ore_deposit", "legacy_resource_id": "iron_ore", "region_chance": 0.10, "starter_salt": 6667, "regional_salt_x": 7907, "regional_salt_y": 9719}
+	],
+	"field_size_rolls": [
+		{"max_roll": 0.26, "min_radius_x": 1, "max_radius_x": 2, "min_radius_y": 1, "max_radius_y": 2},
+		{"max_roll": 0.94, "min_radius_x": 3, "max_radius_x": 6, "min_radius_y": 3, "max_radius_y": 5},
+		{"max_roll": 1.0, "min_radius_x": 7, "max_radius_x": 9, "min_radius_y": 6, "max_radius_y": 8}
+	],
+	"max_radius_x": 9,
+	"max_radius_y": 8
+}

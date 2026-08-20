@@ -1,0 +1,10 @@
+{
+	"schema_version": 1,
+	"type": "patch",
+	"target": "contract:basic_bot",
+	"changes": {
+		"harvest": {
+			"cycle_seconds": 7.0
+		}
+	}
+}

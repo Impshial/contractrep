@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:stone",
+	"legacy_id": "stone",
+	"legacy_item_type": 3,
+	"type": "item",
+	"display_name": "Stone",
+	"description": "Raw stone.",
+	"icon": "assets/resources/stone.png",
+	"category": "resource",
+	"stack_size": 100,
+	"stackable": true,
+	"belt_compatible": true,
+	"tags": ["raw_resource", "construction_material", "mineable"]
+}

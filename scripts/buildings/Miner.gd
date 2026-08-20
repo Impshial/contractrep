@@ -32,8 +32,8 @@ func advance_production(delta_seconds: float) -> void:
 		return
 
 	production_progress += delta_seconds
-	if production_progress >= PRODUCTION_DURATION_SECONDS:
-		production_progress = PRODUCTION_DURATION_SECONDS
+	if production_progress >= _production_duration_seconds():
+		production_progress = _production_duration_seconds()
 		pending_output = true
 		output_blocked = true
 
@@ -53,23 +53,33 @@ func mark_output_blocked() -> void:
 
 
 func get_production_ratio() -> float:
-	return clampf(production_progress / PRODUCTION_DURATION_SECONDS, 0.0, 1.0)
+	return clampf(production_progress / _production_duration_seconds(), 0.0, 1.0)
 
 
 func get_output_item_type() -> int:
 	match mined_resource_type:
 		ResourceDeposit.ResourceType.COAL:
 			return FactoryItem.ItemType.COAL
+		ResourceDeposit.ResourceType.STONE:
+			return FactoryItem.ItemType.STONE
 
 	return FactoryItem.ItemType.IRON_ORE
 
 
 func _is_supported_deposit(deposit: ResourceDeposit) -> bool:
-	return deposit != null and (deposit.resource_id == "iron_ore" or deposit.resource_id == "coal")
+	if deposit == null:
+		return false
+
+	var supported_resources: Array = GameDefinitions.placeable_definition(placeable_id()).get("supported_resources", [])
+	return supported_resources.has(DefinitionManager.normalize_resource_id(deposit.resource_id))
 
 
 func placeable_id() -> String:
 	return "miner"
+
+
+func _production_duration_seconds() -> float:
+	return float(GameDefinitions.placeable_definition(placeable_id()).get("production_duration_seconds", PRODUCTION_DURATION_SECONDS))
 
 
 func _draw() -> void:
@@ -79,6 +89,8 @@ func _draw() -> void:
 
 	if mined_resource_type == ResourceDeposit.ResourceType.COAL:
 		resource_dot_color = Color(0.08, 0.09, 0.09)
+	elif mined_resource_type == ResourceDeposit.ResourceType.STONE:
+		resource_dot_color = Color(0.62, 0.63, 0.67)
 
 	draw_texture_rect(MINER_TEXTURE, texture_rect, false)
 

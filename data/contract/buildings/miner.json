@@ -1,0 +1,18 @@
+{
+	"schema_version": 1,
+	"id": "contract:miner",
+	"legacy_id": "miner",
+	"type": "building",
+	"display_name": "Miner",
+	"description": "Extracts mineable resource deposits.",
+	"behavior": "miner",
+	"category": "extraction",
+	"texture": "assets/buildings/miner.png",
+	"production_duration_seconds": 2.0,
+	"supported_resources": [
+		"contract:iron_ore_deposit",
+		"contract:coal_deposit",
+		"contract:stone_deposit"
+	],
+	"tags": ["extraction", "miner"]
+}

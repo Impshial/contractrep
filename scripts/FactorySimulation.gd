@@ -64,26 +64,30 @@ func get_iron_plate_count() -> int:
 	return get_item_count(FactoryItem.ItemType.IRON_PLATE)
 
 
+func get_stone_count() -> int:
+	return get_item_count(FactoryItem.ItemType.STONE)
+
+
 func get_item_count(item_type: int) -> int:
 	var count := 0
+	var item_id := GameDefinitions.item_id_for_type(item_type)
 	for item: FactoryItem in _items:
 		if item.item_type == item_type:
 			count += 1
 
 	for building: Building in _board.get_all_buildings():
-		var furnace := building as Furnace
-		if furnace == null:
+		if not building.has_visual_inventory():
 			continue
 
-		match item_type:
-			FactoryItem.ItemType.IRON_ORE:
-				count += furnace.iron_ore_count
-			FactoryItem.ItemType.COAL:
-				count += furnace.coal_count
-			FactoryItem.ItemType.IRON_PLATE:
-				count += furnace.iron_plate_count
+		var inventory := building.visual_inventory()
+		if inventory != null:
+			count += inventory.get_quantity(item_id)
 
 	return count
+
+
+func get_factory_item_node_count() -> int:
+	return _items.size()
 
 
 func get_conveyor_count() -> int:

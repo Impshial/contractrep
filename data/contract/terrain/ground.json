@@ -1,0 +1,9 @@
+{
+	"schema_version": 1,
+	"id": "contract:ground",
+	"type": "terrain",
+	"display_name": "Ground",
+	"walkable": true,
+	"buildable": true,
+	"tags": ["ground"]
+}

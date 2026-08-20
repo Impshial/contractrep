@@ -1,4 +1,4 @@
-[gd_scene load_steps=20 format=4]
+[gd_scene load_steps=19 format=4]
 
 [ext_resource type="Script" path="res://scripts/MainGame.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/Board.gd" id="2_board"]
@@ -14,7 +14,6 @@
 [ext_resource type="Script" path="res://scripts/ui/SaveLoadDialogs.gd" id="12_save_dialogs"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/furnace.tscn" id="13_furnace"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/exchanger.tscn" id="14_exchanger"]
-[ext_resource type="Script" path="res://scripts/ui/FurnaceInventoryDialog.gd" id="15_furnace_dialog"]
 [ext_resource type="Script" path="res://scripts/robots/RobotController.gd" id="16_robot_controller"]
 [ext_resource type="Script" path="res://scripts/robots/RobotNavigation.gd" id="17_robot_navigation"]
 [ext_resource type="PackedScene" path="res://scenes/buildings/chest.tscn" id="18_chest"]
@@ -97,13 +96,6 @@ anchors_preset = 0
 script = ExtResource("12_save_dialogs")
 save_manager_path = NodePath("../../SaveManager")
 
-[node name="FurnaceInventoryDialog" type="Control" parent="UI"]
-unique_name_in_owner = true
-layout_mode = 3
-anchors_preset = 0
-script = ExtResource("15_furnace_dialog")
-
-
 [node name="InspectionPanel" type="PanelContainer" parent="UI"]
 unique_name_in_owner = true
 visible = false
@@ -126,4 +118,4 @@ theme_override_constants/margin_bottom = 8
 
 [node name="DetailsLabel" type="Label" parent="UI/DetailsPanel/MarginContainer"]
 layout_mode = 2
-text = "Details\nConveyors: 0\nMiners: 0\nFurnaces: 0\nExchangers: 0\nIron Ore: 0\nCoal: 0\nIron Plates: 0"
+text = "Details\nFPS: 0\nConveyors: 0\nMiners: 0\nFurnaces: 0\nExchangers: 0\nIron Ore: 0\nCoal: 0\nStone: 0\nIron Plates: 0"

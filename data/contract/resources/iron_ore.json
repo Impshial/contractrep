@@ -1,0 +1,24 @@
+{
+	"schema_version": 1,
+	"id": "contract:iron_ore_deposit",
+	"legacy_id": "iron_ore",
+	"type": "resource",
+	"display_name": "Iron Ore Deposit",
+	"resource_name": "Iron Ore",
+	"produces_item": "contract:iron_ore",
+	"starting_amount": 1200,
+	"harvestable": true,
+	"terrain_blocking": true,
+	"texture_prefix": "iron_ore",
+	"texture_variant_count": 8,
+	"textures": [
+		"assets/terrain/resources/iron_ore/iron_ore_01.png",
+		"assets/terrain/resources/iron_ore/iron_ore_02.png",
+		"assets/terrain/resources/iron_ore/iron_ore_03.png",
+		"assets/terrain/resources/iron_ore/iron_ore_04.png",
+		"assets/terrain/resources/iron_ore/iron_ore_05.png",
+		"assets/terrain/resources/iron_ore/iron_ore_06.png",
+		"assets/terrain/resources/iron_ore/iron_ore_07.png",
+		"assets/terrain/resources/iron_ore/iron_ore_08.png"
+	]
+}

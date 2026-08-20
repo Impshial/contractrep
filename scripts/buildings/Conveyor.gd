@@ -7,7 +7,7 @@ const STRAIGHT_FRAME_SIZE: Vector2i = Vector2i(48, 48)
 const STRAIGHT_SHEET: Texture2D = preload("res://assets/conveyors/conveyor_green_idle_48.png")
 const BELT_SECONDS_PER_TILE: float = 0.5
 const FRAME_ADVANCE_PIXELS: float = 3.0
-const MAX_STACKED_ITEMS: int = 4
+const MAX_STACKED_ITEMS: int = 6
 const SOURCE_DIRECTION: Vector2 = Vector2.LEFT
 
 var current_item: FactoryItem
@@ -17,12 +17,12 @@ var _preview_overlay: ColorRect
 
 
 func can_accept_item() -> bool:
-	return stacked_items.size() < MAX_STACKED_ITEMS
+	return stacked_items.size() < _max_stacked_items()
 
 
 func can_accept_item_type(item_type: int) -> bool:
 	if GameDefinitions.item_is_stackable(item_type):
-		return stacked_items.size() < MAX_STACKED_ITEMS
+		return stacked_items.size() < _max_stacked_items()
 
 	return stacked_items.is_empty()
 
@@ -40,7 +40,7 @@ func can_receive_item_from_direction(source_grid_position: Vector2i) -> bool:
 
 
 func can_accept_after_departures(departing_count: int) -> bool:
-	return max(0, stacked_items.size() - departing_count) < MAX_STACKED_ITEMS
+	return max(0, stacked_items.size() - departing_count) < _max_stacked_items()
 
 
 func accept_item(item: FactoryItem) -> bool:
@@ -158,8 +158,12 @@ func _slot_offsets(item_count: int) -> PackedFloat32Array:
 			return PackedFloat32Array([9.0, -9.0])
 		3:
 			return PackedFloat32Array([12.0, 0.0, -12.0])
-		_:
+		4:
 			return PackedFloat32Array([12.0, 4.0, -4.0, -12.0])
+		5:
+			return PackedFloat32Array([16.0, 8.0, 0.0, -8.0, -16.0])
+		_:
+			return PackedFloat32Array([18.0, 11.0, 4.0, -4.0, -11.0, -18.0])
 
 
 func _create_animated_sprite() -> void:
@@ -204,7 +208,7 @@ func _create_sprite_frames() -> SpriteFrames:
 
 
 func _belt_animation_fps() -> float:
-	var belt_pixels_per_second := float(Board.CELL_SIZE) / BELT_SECONDS_PER_TILE
+	var belt_pixels_per_second := float(Board.CELL_SIZE) / _belt_seconds_per_tile()
 	return belt_pixels_per_second / FRAME_ADVANCE_PIXELS
 
 
@@ -266,3 +270,11 @@ func _draw_fallback_conveyor() -> void:
 		]),
 		PackedColorArray([arrow_color, arrow_color, arrow_color])
 	)
+
+
+func _max_stacked_items() -> int:
+	return int(GameDefinitions.placeable_definition(placeable_id()).get("max_stacked_items", MAX_STACKED_ITEMS))
+
+
+func _belt_seconds_per_tile() -> float:
+	return float(GameDefinitions.placeable_definition(placeable_id()).get("belt_seconds_per_tile", BELT_SECONDS_PER_TILE))

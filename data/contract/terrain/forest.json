@@ -1,0 +1,11 @@
+{
+	"schema_version": 1,
+	"id": "contract:forest",
+	"type": "terrain",
+	"display_name": "Forest",
+	"walkable": false,
+	"buildable": false,
+	"resource": "contract:wood",
+	"texture_variant_count": 16,
+	"tags": ["forest", "wood"]
+}

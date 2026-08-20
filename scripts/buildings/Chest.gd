@@ -1,9 +1,19 @@
 class_name Chest
 extends Building
 
-const DEFAULT_CAPACITY: int = 500
+const STORAGE_SLOT_COUNT: int = 40
+const STORAGE_SLOTS_PER_ROW: int = 10
 
-var inventory := Inventory.new(DEFAULT_CAPACITY)
+var inventory := Inventory.new()
+
+
+func _init() -> void:
+	var inventory_definition: Dictionary = GameDefinitions.placeable_definition(placeable_id()).get("inventory", {})
+	inventory.configure_storage_slots(
+		int(inventory_definition.get("storage_slots", STORAGE_SLOT_COUNT)),
+		int(inventory_definition.get("slots_per_row", STORAGE_SLOTS_PER_ROW)),
+		int(inventory_definition.get("stack_size", Inventory.DEFAULT_STACK_LIMIT))
+	)
 
 
 func placeable_id() -> String:
@@ -12,6 +22,26 @@ func placeable_id() -> String:
 
 func supports_logistics_interface() -> bool:
 	return true
+
+
+func is_container() -> bool:
+	return true
+
+
+func container_inventory() -> Inventory:
+	return inventory
+
+
+func has_visual_inventory() -> bool:
+	return true
+
+
+func visual_inventory() -> Inventory:
+	return inventory
+
+
+func inventory_display_name() -> String:
+	return GameDefinitions.placeable_display_name(placeable_id())
 
 
 func can_accept_factory_item(item_type: int) -> bool:
@@ -25,7 +55,30 @@ func accept_factory_item(item_type: int) -> bool:
 
 
 func can_provide_factory_item() -> bool:
-	return false
+	return peek_provided_factory_item_type() >= 0
+
+
+func peek_provided_factory_item_type() -> int:
+	for item_key: Variant in inventory.contents().keys():
+		var item_type := GameDefinitions.item_type_for_id(str(item_key))
+		if item_type >= 0 and inventory.get_quantity(str(item_key)) > 0:
+			return item_type
+
+	return -1
+
+
+func provide_factory_item() -> int:
+	var item_type := peek_provided_factory_item_type()
+	if item_type < 0:
+		return -1
+
+	var item_id := GameDefinitions.item_id_for_type(item_type)
+	var removed := inventory.remove_item(item_id, 1)
+	if removed != 1:
+		return -1
+
+	queue_redraw()
+	return item_type
 
 
 func serialize_inventory() -> Dictionary:

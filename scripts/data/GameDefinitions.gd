@@ -4,138 +4,101 @@ extends RefCounted
 enum ItemCategory { RESOURCE, INTERMEDIATE, PRODUCT }
 enum PlaceableCategory { LOGISTICS, EXTRACTION, SMELTING, STORAGE, CRAFTING }
 
-const ITEM_DEFINITIONS: Dictionary = {
-	FactoryItem.ItemType.IRON_ORE: {
-		"id": "iron_ore",
-		"display_name": "Iron Ore",
-		"category": ItemCategory.RESOURCE,
-		"stackable": true,
-	},
-	FactoryItem.ItemType.COAL: {
-		"id": "coal",
-		"display_name": "Coal",
-		"category": ItemCategory.RESOURCE,
-		"stackable": true,
-	},
-	FactoryItem.ItemType.IRON_PLATE: {
-		"id": "iron_plate",
-		"display_name": "Iron Plate",
-		"category": ItemCategory.INTERMEDIATE,
-		"stackable": true,
-	},
+const CATEGORY_NAMES: Dictionary = {
+	"resource": ItemCategory.RESOURCE,
+	"intermediate": ItemCategory.INTERMEDIATE,
+	"product": ItemCategory.PRODUCT,
+	"logistics": PlaceableCategory.LOGISTICS,
+	"extraction": PlaceableCategory.EXTRACTION,
+	"smelting": PlaceableCategory.SMELTING,
+	"storage": PlaceableCategory.STORAGE,
+	"crafting": PlaceableCategory.CRAFTING,
 }
 
-const INVENTORY_ITEM_DEFINITIONS: Dictionary = {
-	"iron_ore": {
-		"display_name": "Iron Ore",
-		"category": ItemCategory.RESOURCE,
-	},
-	"coal": {
-		"display_name": "Coal",
-		"category": ItemCategory.RESOURCE,
-	},
-	"iron_plate": {
-		"display_name": "Iron Plate",
-		"category": ItemCategory.INTERMEDIATE,
-	},
-	"wood": {
-		"display_name": "Wood",
-		"category": ItemCategory.RESOURCE,
-	},
-	"stone": {
-		"display_name": "Stone",
-		"category": ItemCategory.RESOURCE,
-	},
-}
 
-const RESOURCE_DEFINITIONS: Dictionary = {
-	"iron_ore": {
-		"display_name": "Iron Ore Deposit",
-		"resource_name": "Iron Ore",
-		"inventory_item_id": "iron_ore",
-		"starting_amount": 1200,
-		"harvestable": true,
-		"texture_prefix": "iron_ore",
-		"texture_variant_count": 8,
-	},
-	"coal": {
-		"display_name": "Coal Deposit",
-		"resource_name": "Coal",
-		"inventory_item_id": "coal",
-		"starting_amount": 1000,
-		"harvestable": true,
-		"texture_prefix": "coal",
-		"texture_variant_count": 8,
-	},
-	"wood": {
-		"display_name": "Tree",
-		"resource_name": "Wood",
-		"inventory_item_id": "wood",
-		"starting_amount": 300,
-		"harvestable": true,
-		"texture_prefix": "",
-		"texture_variant_count": 0,
-	},
-}
-
-const PLACEABLE_DEFINITIONS: Dictionary = {
-	"conveyor": {
-		"display_name": "Conveyor",
-		"category": PlaceableCategory.LOGISTICS,
-	},
-	"miner": {
-		"display_name": "Miner",
-		"category": PlaceableCategory.EXTRACTION,
-	},
-	"furnace": {
-		"display_name": "Furnace",
-		"category": PlaceableCategory.SMELTING,
-	},
-	"exchanger": {
-		"display_name": "Exchanger",
-		"category": PlaceableCategory.LOGISTICS,
-	},
-	"chest": {
-		"display_name": "Chest",
-		"category": PlaceableCategory.STORAGE,
-		"implemented": true,
-	},
-	"warehouse": {
-		"display_name": "Warehouse",
-		"category": PlaceableCategory.STORAGE,
-		"implemented": false,
-	},
-}
+static func ensure_loaded() -> bool:
+	return DefinitionManager.ensure_loaded()
 
 
 static func item_display_name(item_type: int) -> String:
-	return str(ITEM_DEFINITIONS.get(item_type, {}).get("display_name", "Unknown Item"))
+	return str(DefinitionManager.get_item_by_type(item_type).get("display_name", "Unknown Item"))
 
 
 static func item_id_for_type(item_type: int) -> String:
-	return str(ITEM_DEFINITIONS.get(item_type, {}).get("id", "unknown"))
+	return str(DefinitionManager.get_item_by_type(item_type).get("legacy_id", "unknown"))
+
+
+static func namespaced_item_id_for_type(item_type: int) -> String:
+	return str(DefinitionManager.get_item_by_type(item_type).get("id", ""))
 
 
 static func item_type_for_id(item_id: String) -> int:
-	for type_key: Variant in ITEM_DEFINITIONS.keys():
-		if str(ITEM_DEFINITIONS[type_key].get("id", "")) == item_id:
-			return int(type_key)
-
-	return -1
+	var definition := DefinitionManager.get_item(item_id)
+	return int(definition.get("legacy_item_type", -1))
 
 
 static func inventory_item_display_name(item_id: String) -> String:
-	return str(INVENTORY_ITEM_DEFINITIONS.get(item_id, {}).get("display_name", item_id.capitalize()))
+	var definition := DefinitionManager.get_item(item_id)
+	return str(definition.get("display_name", item_id.capitalize()))
 
 
 static func item_is_stackable(item_type: int) -> bool:
-	return bool(ITEM_DEFINITIONS.get(item_type, {}).get("stackable", false))
+	return bool(DefinitionManager.get_item_by_type(item_type).get("stackable", false))
+
+
+static func item_stack_size(item_id: String) -> int:
+	return int(DefinitionManager.get_item(item_id).get("stack_size", Inventory.DEFAULT_STACK_LIMIT))
+
+
+static func item_texture(item_id: String) -> Texture2D:
+	return DefinitionManager.texture_for_item_id(item_id)
 
 
 static func resource_definition(resource_id: String) -> Dictionary:
-	var definition: Variant = RESOURCE_DEFINITIONS.get(resource_id, {})
-	return definition if definition is Dictionary else {}
+	var definition := DefinitionManager.get_resource(resource_id).duplicate(true)
+	if definition.is_empty():
+		return {}
+
+	definition["inventory_item_id"] = DefinitionManager.legacy_item_id(str(definition.get("produces_item", "")))
+	return definition
+
+
+static func resource_display_id(resource_id: String) -> String:
+	return DefinitionManager.legacy_resource_id(resource_id)
+
+
+static func resource_definition_id(resource_id: String) -> String:
+	return DefinitionManager.normalize_resource_id(resource_id)
+
+
+static func placeable_definition(placeable_id: String) -> Dictionary:
+	return DefinitionManager.get_building(placeable_id)
 
 
 static func placeable_display_name(placeable_id: String) -> String:
-	return str(PLACEABLE_DEFINITIONS.get(placeable_id, {}).get("display_name", "Unknown Placeable"))
+	return str(placeable_definition(placeable_id).get("display_name", "Unknown Placeable"))
+
+
+static func placeable_category(placeable_id: String) -> int:
+	var category_name := str(placeable_definition(placeable_id).get("category", "logistics"))
+	return int(CATEGORY_NAMES.get(category_name, PlaceableCategory.LOGISTICS))
+
+
+static func player_definition(player_id: String = "contract:player") -> Dictionary:
+	return DefinitionManager.get_player(player_id)
+
+
+static func bot_definition(bot_id: String = "contract:basic_bot") -> Dictionary:
+	return DefinitionManager.get_bot(bot_id)
+
+
+static func worldgen_definition(worldgen_id: String = "contract:default_planet") -> Dictionary:
+	return DefinitionManager.get_worldgen(worldgen_id)
+
+
+static func save_content_pack_metadata() -> Array[Dictionary]:
+	return DefinitionManager.save_content_pack_metadata()
+
+
+static func missing_content_packs(required_packs: Array) -> Array[String]:
+	return DefinitionManager.missing_content_packs(required_packs)

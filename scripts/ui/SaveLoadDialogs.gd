@@ -41,6 +41,14 @@ func open_load_dialog() -> void:
 	_save_panel.visible = false
 
 
+func is_dialog_open() -> bool:
+	return (_save_panel != null and _save_panel.visible) or (_load_panel != null and _load_panel.visible)
+
+
+func close_dialogs() -> void:
+	_on_close_pressed()
+
+
 func _build_dialogs() -> void:
 	_save_panel = _create_panel(Vector2(32.0, 32.0), Vector2(430.0, 360.0))
 	add_child(_save_panel)

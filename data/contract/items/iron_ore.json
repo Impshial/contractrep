@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:iron_ore",
+	"legacy_id": "iron_ore",
+	"legacy_item_type": 0,
+	"type": "item",
+	"display_name": "Iron Ore",
+	"description": "Unprocessed iron ore.",
+	"icon": "assets/resources/iron_ore.png",
+	"category": "resource",
+	"stack_size": 100,
+	"stackable": true,
+	"belt_compatible": true,
+	"tags": ["raw_resource", "mineable"]
+}

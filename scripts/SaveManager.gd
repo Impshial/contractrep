@@ -5,7 +5,7 @@ const SAVE_STORE_PATH: String = "user://contract_saves.json"
 const LEGACY_SAVE_STORE_PATH: String = "user://factori_no_saves.json"
 const LEGACY_PROJECT_NAME: String = "FactoriNo"
 const LEGACY_SAVE_FILE_NAME: String = "factori_no_saves.json"
-const SAVE_VERSION: int = 6
+const SAVE_VERSION: int = 7
 const THUMBNAIL_SIZE: Vector2i = Vector2i(160, 90)
 
 @export var board_path: NodePath
@@ -23,6 +23,7 @@ var _board: Board
 var _building_parent: Node2D
 var _factory_simulation: FactorySimulation
 var _robot_controller: RobotController
+var _player_inventory: Inventory
 
 
 func _ready() -> void:
@@ -44,11 +45,13 @@ func save_game_named(save_name: String) -> bool:
 		"name": trimmed_name,
 		"saved_at": Time.get_datetime_string_from_system(false, true),
 		"world_seed": _board.active_world_seed,
+		"content_packs": GameDefinitions.save_content_pack_metadata(),
 		"resources": _board.serialize_resources(),
 		"thumbnail": _capture_thumbnail_base64(),
 		"buildings": _serialize_buildings(),
 		"items": _factory_simulation.serialize_items(),
 		"robots": _robot_controller.serialize_robots(),
+		"player_inventory": _player_inventory.serialize() if _player_inventory != null else {},
 	}
 
 	var store := _load_store()
@@ -83,9 +86,15 @@ func start_new_game(seed_value: int) -> void:
 	_factory_simulation.set_running(false)
 	_factory_simulation.clear_items()
 	_robot_controller.clear_robots()
+	_reset_player_inventory()
 	_clear_buildings()
 	_board.generate_terrain(seed_value)
 	_robot_controller.spawn_starting_robots(seed_value)
+
+
+func set_player_inventory(inventory: Inventory) -> void:
+	_player_inventory = inventory
+	_reset_player_inventory()
 
 
 func get_save_summaries() -> Array[Dictionary]:
@@ -132,6 +141,7 @@ func _serialize_buildings() -> Array[Dictionary]:
 
 		var furnace := building as Furnace
 		if furnace != null:
+			entry["inventory"] = furnace.serialize_inventory()
 			entry["iron_ore_count"] = furnace.iron_ore_count
 			entry["coal_count"] = furnace.coal_count
 			entry["iron_plate_count"] = furnace.iron_plate_count
@@ -231,9 +241,18 @@ func _find_save_by_name(save_name: String) -> Dictionary:
 
 
 func _load_from_data(save_data: Dictionary) -> void:
+	var missing_content := GameDefinitions.missing_content_packs(save_data.get("content_packs", []))
+	if not missing_content.is_empty():
+		push_error("Cannot load save. Missing content packs: %s" % [", ".join(missing_content)])
+		return
+
 	_factory_simulation.set_running(false)
 	_factory_simulation.clear_items()
 	_robot_controller.clear_robots()
+	if save_data.has("player_inventory") and _player_inventory != null:
+		_player_inventory.restore(save_data.get("player_inventory", {}))
+	else:
+		_reset_player_inventory()
 	_clear_buildings()
 	_board.generate_terrain(int(save_data.get("world_seed", Board.DEFAULT_WORLD_SEED)))
 	if save_data.has("resources"):
@@ -321,9 +340,14 @@ func _restore_furnace_state(building: Building, entry: Dictionary) -> void:
 	if furnace == null:
 		return
 
-	furnace.iron_ore_count = int(entry.get("iron_ore_count", furnace.iron_ore_count))
-	furnace.coal_count = int(entry.get("coal_count", furnace.coal_count))
-	furnace.iron_plate_count = int(entry.get("iron_plate_count", furnace.iron_plate_count))
+	if entry.has("inventory"):
+		furnace.restore_inventory(entry.get("inventory", furnace.serialize_inventory()))
+	else:
+		furnace.restore_legacy_counts(
+			int(entry.get("iron_ore_count", furnace.iron_ore_count)),
+			int(entry.get("coal_count", furnace.coal_count)),
+			int(entry.get("iron_plate_count", furnace.iron_plate_count))
+		)
 	furnace.smelting_progress = float(entry.get("smelting_progress", furnace.smelting_progress))
 	furnace.queue_redraw()
 
@@ -353,12 +377,27 @@ func _clear_buildings() -> void:
 	_board.clear_all_buildings()
 
 
+func _reset_player_inventory() -> void:
+	if _player_inventory == null:
+		return
+
+	var inventory_definition: Dictionary = GameDefinitions.player_definition().get("inventory", {})
+	var storage_slots := int(inventory_definition.get("storage_slots", 30))
+	_player_inventory.configure_storage_slots(
+		storage_slots,
+		int(inventory_definition.get("slots_per_row", 10)),
+		int(inventory_definition.get("stack_size", Inventory.DEFAULT_STACK_LIMIT)),
+		storage_slots
+	)
+	_player_inventory.clear()
+
+
 func _building_type_id(building: Building) -> String:
-	return building.placeable_id()
+	return DefinitionManager.normalize_building_id(building.placeable_id())
 
 
 func _scene_for_building_type(type_id: String) -> PackedScene:
-	match type_id:
+	match DefinitionManager.legacy_building_id(type_id):
 		"conveyor":
 			return conveyor_scene
 		"miner":

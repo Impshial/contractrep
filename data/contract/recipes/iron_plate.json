@@ -1,0 +1,15 @@
+{
+	"schema_version": 1,
+	"id": "contract:iron_plate",
+	"type": "recipe",
+	"display_name": "Iron Plate",
+	"machine_tags": ["furnace"],
+	"inputs": [
+		{"item": "contract:iron_ore", "amount": 1},
+		{"item": "contract:coal", "amount": 1}
+	],
+	"outputs": [
+		{"item": "contract:iron_plate", "amount": 1}
+	],
+	"cycle_seconds": 2.0
+}

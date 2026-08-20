@@ -1,0 +1,26 @@
+{
+	"schema_version": 1,
+	"id": "contract:furnace",
+	"legacy_id": "furnace",
+	"type": "building",
+	"display_name": "Furnace",
+	"description": "Smelts raw ore into plates.",
+	"behavior": "furnace",
+	"category": "smelting",
+	"texture": "assets/buildings/furnace.png",
+	"inventory": {
+		"input_slots": 2,
+		"output_slots": 1,
+		"storage_slots": 10,
+		"slots_per_row": 10,
+		"stack_size": 100,
+		"slot_filters": [
+			{"role": "input", "slot": 0, "item": "contract:iron_ore"},
+			{"role": "input", "slot": 1, "item": "contract:coal"},
+			{"role": "output", "slot": 0, "item": "contract:iron_plate"}
+		]
+	},
+	"smelting_duration_seconds": 2.0,
+	"recipe": "contract:iron_plate",
+	"tags": ["production", "furnace"]
+}
